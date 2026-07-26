@@ -4,7 +4,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const repositoryDir = path.resolve(projectDir, '..');
 const distDir = path.join(projectDir, 'dist');
 const artifactFile = path.join(distDir, 'ctos-greeter.tar');
 const themeBuildDir = path.join(distDir, 'theme');
@@ -36,9 +35,8 @@ await Promise.all([
 await rename(themeBuildDir, themeDir);
 await Promise.all([
   cp(path.join(projectDir, 'index.yml'), path.join(themeDir, 'index.yml')),
-  cp(path.join(repositoryDir, 'dotfiles/wallpapers'), path.join(themeDir, 'backgrounds'), {
-    recursive: true,
-  }),
+  // No bundled backgrounds: the theme falls back to a plain black background.
+  mkdir(path.join(themeDir, 'backgrounds'), { recursive: true }),
   cp(
     path.join(projectDir, 'config/web-greeter.yml'),
     path.join(lightdmConfigDir, 'web-greeter.yml'),
