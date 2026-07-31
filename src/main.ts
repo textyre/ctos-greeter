@@ -34,8 +34,10 @@ async function boot(): Promise<void> {
   const clock = new Clock();
   clock.start();
 
+  const themeAssetPath = (...parts: string[]) => ['.', ...parts].join('/');
+
   const archIcon = new Svg3DIcon('.svg-3d-icon-arch', {
-    svgPath: '/assets/svgs/arch-logo.svg',
+    svgPath: themeAssetPath('assets', 'svgs', 'arch-logo.svg'),
     animations: ['rotate-slow'],
     enableBloom: false,
     depth: 36,
@@ -46,7 +48,7 @@ async function boot(): Promise<void> {
   });
 
   // const gentooIcon = new Svg3DIcon('.svg-3d-icon-gentoo', {
-  //   svgPath: '/assets/svgs/gentoo-3d.svg',
+  //   svgPath: themeAssetPath('assets', 'svgs', 'gentoo-3d.svg'),
   //   animations: ['rotate-slow'],
   //   enableBloom: false,
   //   depth: 36,
@@ -58,7 +60,7 @@ async function boot(): Promise<void> {
   // });
 
   // const ubuntuIcon = new Svg3DIcon('.svg-3d-icon-ubuntu', {
-  //   svgPath: '/assets/svgs/ubuntu-3d.svg',
+  //   svgPath: themeAssetPath('assets', 'svgs', 'ubuntu-3d.svg'),
   //   animations: ['rotate-slow'],
   //   enableBloom: false,
   //   depth: 36,

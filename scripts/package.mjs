@@ -1,4 +1,5 @@
 import { chmod, cp, mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,6 +13,26 @@ const themeDir = path.join(rootfsDir, 'usr/share/web-greeter/themes/ctos');
 const helperDir = path.join(rootfsDir, 'usr/lib/ctos-greeter');
 const lightdmConfigDir = path.join(rootfsDir, 'etc/lightdm');
 const lightdmDropInDir = path.join(lightdmConfigDir, 'lightdm.conf.d');
+
+function toGitBashPath(value) {
+  const match = /^(?<drive>[A-Za-z]):\\(?<rest>.*)$/.exec(value);
+  if (!match?.groups) return value;
+
+  return `/${match.groups.drive.toLowerCase()}/${match.groups.rest.replaceAll('\\', '/')}`;
+}
+
+function resolveTarCommand() {
+  if (process.env.GIT_TAR) {
+    return { command: process.env.GIT_TAR, usesGitBashPaths: process.platform === 'win32' };
+  }
+
+  if (process.platform === 'win32') {
+    const gitTar = 'C:\\Program Files\\Git\\usr\\bin\\tar.exe';
+    if (existsSync(gitTar)) return { command: gitTar, usesGitBashPaths: true };
+  }
+
+  return { command: 'tar', usesGitBashPaths: false };
+}
 
 async function normalizePermissions(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -58,13 +79,16 @@ await chmod(path.join(helperDir, 'write-system-info'), 0o755);
 
 const artifactEntries = (await readdir(rootfsDir)).sort();
 await rm(artifactFile, { force: true });
-execFileSync('tar', [
+const tar = resolveTarCommand();
+execFileSync(tar.command, [
   '--create',
-  '--file', artifactFile,
+  '--file', tar.usesGitBashPaths ? toGitBashPath(artifactFile) : artifactFile,
+  '--sort=name',
+  '--mtime=@0',
   '--owner=0',
   '--group=0',
   '--numeric-owner',
-  '--directory', rootfsDir,
+  '--directory', tar.usesGitBashPaths ? toGitBashPath(rootfsDir) : rootfsDir,
   ...artifactEntries,
 ]);
 await rm(rootfsDir, { recursive: true, force: true });
