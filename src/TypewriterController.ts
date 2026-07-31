@@ -12,6 +12,7 @@ interface TextLine {
   type: 'text';
   text: string;
   divider?: boolean;
+  id?: 'x11-display';
 }
 
 interface FingerprintLine {
@@ -29,6 +30,8 @@ type LogLine = TextLine | FingerprintLine;
  */
 export class TypewriterController {
   private readonly adapter = new DOMAdapter();
+  private displayLineEl: HTMLElement | null = null;
+  private resizeFrame: number | null = null;
 
   constructor(
     private readonly info: SystemInfo,
@@ -63,7 +66,8 @@ export class TypewriterController {
       },
       {
         type: 'text',
-        text: LOG_TEMPLATES.X11_DISPLAY(this.info.display_output, this.info.display_resolution),
+        id: 'x11-display',
+        text: this.getDisplayLineText(),
       },
       {
         type: 'text',
@@ -104,6 +108,12 @@ export class TypewriterController {
       : CSS_CLASSES.LOG_LINE;
     container.appendChild(lineEl);
     await new TypewriterEngine(lineEl, line.text).type();
+
+    if (line.id === 'x11-display') {
+      this.displayLineEl = lineEl;
+      this.bindDisplayResizeUpdates();
+      this.updateDisplayLine();
+    }
   }
 
   private async renderFingerprint(container: HTMLElement, line: LogLine): Promise<void> {
@@ -120,5 +130,41 @@ export class TypewriterController {
     lineEl.appendChild(fp.container);
     requestAnimationFrame(() => fp.container.classList.add(CSS_CLASSES.VISIBLE));
     await fp.scramble();
+  }
+
+  private bindDisplayResizeUpdates(): void {
+    window.addEventListener('resize', () => {
+      if (this.resizeFrame !== null) {
+        window.cancelAnimationFrame(this.resizeFrame);
+      }
+
+      this.resizeFrame = window.requestAnimationFrame(() => {
+        this.resizeFrame = null;
+        this.updateDisplayLine();
+      });
+    });
+  }
+
+  private updateDisplayLine(): void {
+    if (!this.displayLineEl) return;
+    this.displayLineEl.textContent = this.getDisplayLineText();
+  }
+
+  private getDisplayLineText(): string {
+    return LOG_TEMPLATES.X11_DISPLAY(
+      this.info.display_output,
+      this.getCurrentDisplayResolution(),
+    );
+  }
+
+  private getCurrentDisplayResolution(): string {
+    const width = window.innerWidth || document.documentElement.clientWidth;
+    const height = window.innerHeight || document.documentElement.clientHeight;
+
+    if (width > 0 && height > 0) {
+      return `${Math.round(width)}x${Math.round(height)}`;
+    }
+
+    return this.info.display_resolution;
   }
 }
