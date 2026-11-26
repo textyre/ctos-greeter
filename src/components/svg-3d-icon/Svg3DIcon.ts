@@ -235,8 +235,14 @@ export class Svg3DIcon {
   private async loadSVG(): Promise<void> {
     const loader = new SVGLoader();
 
-    // Load SVG
-    const data = await loader.loadAsync(this.config.svgPath);
+    // Fetched as text and parsed, as system-info.json is: three's FileLoader (loadAsync) builds its
+    // own Request and streams the body, which nody-greeter's web-greeter:// protocol answers with
+    // "TypeError: Failed to fetch".
+    const response = await fetch(this.config.svgPath);
+    if (!response.ok && response.status !== 0) {
+      throw new Error(`Cannot load ${this.config.svgPath}: ${response.status}`);
+    }
+    const data = loader.parse(await response.text());
 
     // Get all paths from SVG
     const paths = data.paths;
