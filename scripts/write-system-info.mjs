@@ -42,7 +42,8 @@ function readOsName() {
       .filter(([key, value]) => key && value)
       .map(([key, value]) => [key, value.replace(/^"|"$/g, '')]),
   );
-  return values.NAME || values.ID || 'unknown';
+  // The short name (ID=arch), as the theme shows it beside "OS"; NAME ("Arch Linux") is too long.
+  return values.ID || values.NAME || 'unknown';
 }
 
 function readTimezone() {
